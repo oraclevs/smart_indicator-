@@ -1,5 +1,4 @@
 
-
 //@version=5
 indicator('Smart Money Concepts [O.C.C]', 'O.C.C - Smart Money Concepts', overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500)
 //---------------------------------------------------------------------------------------------------------------------}
@@ -843,3 +842,90 @@ alertcondition(currentAlerts.bullishFairValueGap,       'Bullish FVG',          
 alertcondition(currentAlerts.bearishFairValueGap,       'Bearish FVG',                  'Bearish FVG formed')
 
 //---------------------------------------------------------------------------------------------------------------------}
+
+
+// Additional Inputs for the Strategy
+length = input(100, title="EMA Length")
+
+// Calculate 100 EMA
+ema100 = ta.ema(close, length)
+
+// Plot EMA
+plot(ema100, color=color.blue, title="100 EMA", linewidth=2)
+
+
+// high and low 
+
+
+// Inputs
+lookbackPeriod = input.int(20, title="High/Low Lookback Period")
+significantThreshold = input.float(0.01, title="Significant Level Threshold", step=0.001)
+
+// Functions to find Swing Highs and Lows
+isSwingHigh(src, len) =>
+    src == ta.highest(src, len)
+
+isSwingLow(src, len) =>
+    src == ta.lowest(src, len)
+
+// Identify Swing Highs and Lows
+currentHigh = high
+currentLow = low
+isHighPoint = isSwingHigh(high, lookbackPeriod)
+isLowPoint = isSwingLow(low, lookbackPeriod)
+previousHigh = ta.valuewhen(isHighPoint, high, 1)
+previousLow = ta.valuewhen(isLowPoint, low, 1)
+significantHigh = isHighPoint and (high > previousHigh * (1 + significantThreshold))
+significantLow = isLowPoint and (low < previousLow * (1 - significantThreshold))
+
+// Initialize Labels
+var label highLabel = na
+var label hhLabel = na
+var label lowLabel = na
+var label llLabel = na
+
+// Plot Significant Highs and Higher Highs
+if significantHigh
+    highLabel := label.new(bar_index, high, text="H", style=label.style_label_up, color=color.red, textcolor=color.white, size=size.small)
+    if high > previousHigh
+        hhLabel := label.new(bar_index, high, text="HH", style=label.style_label_up, color=color.maroon, textcolor=color.white, size=size.small)
+
+// Plot Significant Lows and Lower Lows
+if significantLow
+    lowLabel := label.new(bar_index, low, text="L", style=label.style_label_down, color=color.green, textcolor=color.white, size=size.small)
+    if low < previousLow
+        llLabel := label.new(bar_index, low, text="LL", style=label.style_label_down, color=color.lime, textcolor=color.white, size=size.small)
+
+// Identifying Trend
+trendUp = ta.crossover(ta.sma(close, 50), ta.sma(close, 200))
+trendDown = ta.crossunder(ta.sma(close, 50), ta.sma(close, 200))
+
+// Identifying Key Reversal Points
+reversalUp = isLowPoint and ta.crossover(close, ta.sma(close, 50))
+reversalDown = isHighPoint and ta.crossunder(close, ta.sma(close, 50))
+
+// Identifying Consolidation Zones
+consolidation = ta.highest(high, lookbackPeriod) == ta.lowest(low, lookbackPeriod)
+
+// Highlighting Breakouts
+breakoutUp = ta.crossover(close, ta.highest(high, lookbackPeriod))
+breakoutDown = ta.crossunder(close, ta.lowest(low, lookbackPeriod))
+
+// Plot Trend Indicators
+plotshape(series=trendUp, location=location.belowbar, color=color.green, style=shape.triangleup, title="Uptrend", size=size.small, text="Uptrend")
+plotshape(series=trendDown, location=location.abovebar, color=color.red, style=shape.triangledown, title="Downtrend", size=size.small, text="Downtrend")
+
+// Plot Key Reversal Points
+plotshape(series=reversalUp, location=location.belowbar, color=color.blue, style=shape.triangleup, title="Reversal Up", size=size.small, text="Reversal Up")
+plotshape(series=reversalDown, location=location.abovebar, color=color.orange, style=shape.triangledown, title="Reversal Down", size=size.small, text="Reversal Down")
+
+// Plot Consolidation Zones
+plotshape(series=consolidation, location=location.top, color=color.gray, style=shape.square, title="Consolidation", size=size.tiny, text="Consolidation")
+
+// Plot Breakouts
+plotshape(series=breakoutUp, location=location.belowbar, color=color.yellow, style=shape.diamond, title="Breakout Up", size=size.small, text="Breakout Up")
+plotshape(series=breakoutDown, location=location.abovebar, color=color.purple, style=shape.diamond, title="Breakout Down", size=size.small, text="Breakout Down")
+
+// Visual Enhancements
+bgcolor(trendUp ? color.new(color.green, 90) : na, title="Uptrend Background")
+bgcolor(trendDown ? color.new(color.red, 90) : na, title="Downtrend Background")
